@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panataran Exam — TKA 1945</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- CANVAS UNTUK EFEK MATRIX RAIN -->
+<canvas id="matrix-canvas"></canvas>
+
+<!-- ============================ LOGIN ============================ -->
+<section id="screen-login" class="screen aktif">
+  <div class="wrap">
+    <div class="card pop-in">
+      <div class="brand">
+        <div class="brand-mark">TKA</div>
+        <div>
+          <h1 class="brand-title">Panataran Exam</h1>
+          <p class="brand-sub">Asesmen Nasional &middot; TKA 1945</p>
+        </div>
+      </div>
+      <hr class="sep">
+
+      <label class="field">
+        <span>Username</span>
+        <input id="input-nama" type="text" autocomplete="off" placeholder="Username Login">
+      </label>
+      <label class="field">
+        <span>Token Ujian</span>
+        <input id="input-token" type="text" autocomplete="off" maxlength="12" placeholder="Token">
+      </label>
+
+      <p id="login-error" class="error" hidden></p>
+      <button id="btn-login" class="btn btn-primary btn-block">Masuk Ujian</button>
+      <p class="hint">Dokumen Negara, Sangat Rahasia.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= KONFIRMASI ========================= -->
+<section id="screen-konfirmasi" class="screen">
+  <div class="wrap">
+    <div class="card wide pop-in">
+      <h1 class="section-title">Konfirmasi Data & Tata Tertib</h1>
+
+      <dl class="datagrid">
+        <div><dt>Nama Peserta</dt><dd id="k-nama">—</dd></div>
+        <div><dt>Mata Ujian</dt><dd id="k-ujian">—</dd></div>
+        <div><dt>Jumlah Soal</dt><dd id="k-jumlah">—</dd></div>
+        <div><dt>Alokasi Waktu</dt><dd id="k-waktu">—</dd></div>
+      </dl>
+
+      <h2 class="sub-title">Tata Tertib</h2>
+      <ol class="tata-tertib">
+        <li>Ujian dilaksanakan dalam mode layar penuh (fullscreen).</li>
+        <li>Dilarang berpindah tab, membuka aplikasi lain, atau keluar dari mode layar penuh.</li>
+        <li>Dilarang menyalin (copy), menempel (paste), atau mengklik kanan pada halaman ujian.</li>
+        <li>Setiap pelanggaran dicatat oleh sistem dan dilaporkan kepada pengawas.</li>
+        <li>Waktu ujian terus berjalan meskipun halaman dimuat ulang.</li>
+        <li>Jawaban tersimpan otomatis pada perangkat ini.</li>
+      </ol>
+
+      <label class="check">
+        <input type="checkbox" id="cek-tertib">
+        <span>Saya telah membaca, memahami, dan menyetujui tata tertib ujian.</span>
+      </label>
+
+      <div class="row-2">
+        <button id="btn-kembali-login" class="btn btn-outline">Kembali</button>
+        <button id="btn-mulai" class="btn btn-primary" disabled>Siap, Mulai Ujian!</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ UJIAN ============================ -->
+<section id="screen-ujian" class="screen screen-ujian">
+  <header class="topbar">
+    <div class="tb-left">
+      <div class="tb-title" id="ujian-nama">—</div>
+      <div class="tb-sub" id="ujian-peserta">—</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-meta">
+        <span>Pelanggaran</span>
+        <span class="val" id="lbl-pelanggaran">0</span>
+      </div>
+      <div class="timer" id="timer">--:--</div>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden>
+    <span id="banner-text"></span>
+    <button id="btn-banner" class="btn-tiny">Tutup</button>
+  </div>
+
+  <main class="layout">
+    <section class="soal-panel" id="soal-panel">
+      <div class="soal-head">
+        <div class="soal-info">Soal <strong id="soal-nomor">1</strong> dari <span id="soal-total">25</span></div>
+        <div class="font-ctrl">
+          <span class="font-lbl">Ukuran huruf</span>
+          <button id="btn-font-minus" class="btn-tiny" type="button">A-</button>
+          <button id="btn-font-plus" class="btn-tiny" type="button">A+</button>
+        </div>
+      </div>
+
+      <div class="soal-body">
+        <div class="soal-teks" id="soal-teks"></div>
+        <div class="opsi-list" id="opsi-list"></div>
+        
+        <!-- TOOLBAR STATUS KESULITAN -->
+        <div class="status-bar">
+          <span class="status-label">Tandai soal:</span>
+          <button class="btn-status st-mudah" data-status="mudah" type="button">Mudah</button>
+          <button class="btn-status st-sedang" data-status="sedang" type="button">Sedang</button>
+          <button class="btn-status st-sulit" data-status="sulit" type="button">Sulit</button>
+          <button class="btn-status st-ragu" data-status="ragu" type="button">Ragu-ragu</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="nav-panel" id="nav-panel">
+      <div class="nav-head">
+        <h2>Navigasi Soal</h2>
+        <button id="btn-tutup-nav" class="btn-tiny nav-close" type="button">✕</button>
+      </div>
+      <div class="grid" id="grid-soal"></div>
+
+      <ul class="legend">
+        <li><span class="dot dot-current"></span>Sedang dibuka</li>
+        <li><span class="dot dot-answered"></span>Sudah dijawab</li>
+        <li><span class="dot dot-mudah"></span>Mudah</li>
+        <li><span class="dot dot-sedang"></span>Sedang</li>
+        <li><span class="dot dot-sulit"></span>Sulit</li>
+        <li><span class="dot dot-ragu"></span>Ragu-ragu</li>
+        <li><span class="dot"></span>Belum dijawab</li>
+      </ul>
+
+      <div class="nav-summary">
+        <div><span id="sum-dijawab">0</span> soal dijawab</div>
+        <div><span id="sum-status">0</span> soal ditandai</div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="footer">
+    <button id="btn-prev" class="btn btn-outline" type="button">← Sebelumnya</button>
+    <div class="footer-mid">
+      <button id="btn-nav-toggle" class="btn btn-outline btn-nav" type="button">Daftar Soal</button>
+    </div>
+    <button id="btn-next" class="btn btn-primary" type="button">Selanjutnya →</button>
+  </footer>
+</section>
+
+<!-- =========================== SELESAI =========================== -->
+<section id="screen-selesai" class="screen">
+  <div class="wrap">
+    <div class="card wide pop-in">
+      <h1 class="section-title">Ujian Selesai!</h1>
+      <p class="finish-note" id="selesai-note">
+        Jawaban Anda telah berhasil dikirim. Silakan menunggu instruksi pengawas.
+      </p>
+
+      <dl class="datagrid">
+        <div><dt>Nama Peserta</dt><dd id="h-nama">—</dd></div>
+        <div><dt>Mata Ujian</dt><dd id="h-ujian">—</dd></div>
+        <div><dt>Soal Dijawab</dt><dd id="h-dijawab">—</dd></div>
+        <div><dt>Waktu Pengerjaan</dt><dd id="h-waktu">—</dd></div>
+        <div><dt>Catatan Pelanggaran</dt><dd id="h-pelanggaran">—</dd></div>
+      </dl>
+
+      <div class="row-2" style="margin-top:20px">
+        <button id="btn-ke-login" class="btn btn-primary btn-block">Kembali ke Halaman Awal</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODAL KONFIRMASI SELESAI ===================== -->
+<div id="modal-selesai" class="modal" hidden>
+  <div class="modal-card pop-in">
+    <h2>Selesaikan ujian?</h2>
+    <p>Pastikan seluruh jawaban telah diperiksa. Setelah dikirim, jawaban tidak dapat diubah lagi.</p>
+    <ul class="rekap">
+      <li><span>Belum dijawab</span><strong id="rekap-belum">0</strong></li>
+      <li><span>Ditandai (Mudah/Sedang/Sulit/Ragu)</span><strong id="rekap-tanda">0</strong></li>
+      <li><span>Sudah dijawab</span><strong id="rekap-dijawab">0</strong></li>
+    </ul>
+    <div class="row-2">
+      <button id="btn-batal-selesai" class="btn btn-outline" type="button">Periksa Lagi</button>
+      <button id="btn-konfirmasi-selesai" class="btn btn-success" type="button">Ya, Selesai!</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPT EFEK MATRIX RAIN -->
+<script>
+  const canvas = document.getElementById('matrix-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let width, height, columns, drops;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*'.split('');
+  const fontSize = 18;
+
+  function initMatrix() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    columns = width / fontSize;
+    drops = [];
+    for (let x = 0; x < columns; x++) drops[x] = 1;
+  }
+
+  function drawMatrix() {
+    // Warna background hitam transparan (0.05) untuk efek jejak
+    ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Warna teks hijau
+    ctx.fillStyle = '#00ff41'; 
+    ctx.font = fontSize + 'px monospace';
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+      // Reset ke atas setelah menyentuh bawah layar
+      if (drops[i] * fontSize > height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  window.addEventListener('resize', initMatrix);
+  initMatrix();
+  setInterval(drawMatrix, 50); // Kecepatan animasi (50ms)
+</script>
+<script src="main.js"></script>
+</body>
+</html>
